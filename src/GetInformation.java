@@ -19,7 +19,20 @@ public class GetInformation {
             String s2 = inFileWithInf.readLine();
             while (s2 != null) {
                 for (int i = 0; i < s2.length(); i++) {
-                    if (i + 8 < s2.length() && s2.charAt(i) == '{' && s2.charAt(i + 1) == '\\'
+                    if (i + 3 < s2.length() && s2.charAt(i) == '{' && s2.charAt(i + 1) == '\\'
+                            && s2.charAt(i + 2) == '*') {
+                        int j = i + 3;
+                        while (true) {
+                            if (j == s2.length() || s2.charAt(j) == ';' || s2.charAt(j) == '}') {
+                                answer.append(takeInformation(i, s2, 3));
+                                i = newIndex(i, s2, 3);
+                                break;
+                            } else if (s2.charAt(j) == ' ' || s2.charAt(j) == '{') {
+                                break;
+                            }
+                            j++;
+                        }
+                    } else if (i + 8 < s2.length() && s2.charAt(i) == '{' && s2.charAt(i + 1) == '\\'
                             && (s2.substring(i + 2, i + 2 + 6).equals("author") || s2.substring(i + 2, i + 2 + 6).equals("edmins"))) {
                         answer.append(takeInformation(i, s2, 8));
                         i = newIndex(i, s2, 8);

@@ -21,32 +21,45 @@ public class HideInformation {
             PrintWriter out = new PrintWriter(newFile);
             FileInputStream inFileWithInf = new FileInputStream(fileWithInf);
 
-            int count = 0;
+            int smallCount = 0;
+            int bigCount = 0;
             String s1 = inFileForHide.readLine();
             while (s1 != null) {
                 for (int i = 0; i < s1.length(); i++) {
-                    if (i + 9 < s1.length() && s1.charAt(i) == '{' && s1.charAt(i + 1) == '\\'
+                    if (i + 3 < s1.length() && s1.charAt(i) == '{' && s1.charAt(i + 1) == '\\' && s1.charAt(i + 2) == '*') {
+                        int j = i + 3;
+                        while (true) {
+                            if (j == s1.length() || s1.charAt(j) == ';' || s1.charAt(j) == '}') {
+                                bigCount++;
+                                break;
+                            } else if (s1.charAt(j) == ' ' || s1.charAt(j) == '{') {
+                                break;
+                            }
+                            j++;
+                        }
+                        i = j - 1;
+                    } else if (i + 9 < s1.length() && s1.charAt(i) == '{' && s1.charAt(i + 1) == '\\'
                             && (s1.substring(i + 2, i + 2 + 7).equals("comment") || s1.substring(i + 2, i + 2 + 7).equals("subject")
                             || s1.substring(i + 2, i + 2 + 7).equals("version") || s1.substring(i + 2, i + 2 + 7).equals("doccomm"))) {
-                        count++;
+                        smallCount++;
                         i += 8;
                     } else if (i + 10 < s1.length() && s1.charAt(i) == '{' && s1.charAt(i + 1) == '\\'
                             && (s1.substring(i + 2, i + 2 + 8).equals("operator") || s1.substring(i + 2, i + 2 + 8).equals("keywords")
                             || s1.substring(i + 2, i + 2 + 8).equals("nextfile") || s1.substring(i + 2, i + 2 + 8).equals("nofpages")
                             || s1.substring(i + 2, i + 2 + 8).equals("nofwords") || s1.substring(i + 2, i + 2 + 8).equals("nofchars"))) {
-                        count++;
+                        smallCount++;
                         i += 9;
                     } else if (i + 8 < s1.length() && s1.charAt(i) == '{' && s1.charAt(i + 1) == '\\'
                             && (s1.substring(i + 2, i + 2 + 6).equals("author") || s1.substring(i + 2, i + 2 + 6).equals("edmins"))) {
-                        count++;
+                        smallCount++;
                         i += 7;
                     } else if (i + 7 < s1.length() && s1.charAt(i) == '{' && s1.charAt(i + 1) == '\\'
                             && s1.substring(i + 2, i + 2 + 5).equals("title")) {
-                        count++;
+                        smallCount++;
                         i += 6;
                     } else if (i + 6 < s1.length() && s1.charAt(i) == '{' && s1.charAt(i + 1) == '\\'
                             && s1.substring(i + 2, i + 2 + 4).equals("vern")) {
-                        count++;
+                        smallCount++;
                         i += 5;
                     }
                 }
@@ -62,61 +75,74 @@ public class HideInformation {
             String s2 = inFileForHide1.readLine();
             int start = 0;
             int newCount = 0;
-            int howMuchOnformationWrite = 0;
-            if (count > information.length) {
-                howMuchOnformationWrite = 1;
+            int smallHowMuchOnformationWrite = 0;
+            int bigHowMuchOnformationWrite = 0;
+            if (smallCount + bigCount > information.length) {
+                smallHowMuchOnformationWrite = 1;
+                bigHowMuchOnformationWrite = 1;
                 newCount = information.length;
             } else {
-                howMuchOnformationWrite = information.length / count;
-                newCount = count;
-            }
-
-            if (information.length - howMuchOnformationWrite * (newCount - 1) > 82){
-                System.out.println("Файл слишком большой для данного RTF-файла");
-                return;
+                smallHowMuchOnformationWrite = 10;
+                bigHowMuchOnformationWrite = (information.length - (smallCount * smallHowMuchOnformationWrite)) / bigCount;
+                newCount = smallCount + bigCount;
             }
 
             while (s2 != null) {
                 for (int i = 0; i < s2.length(); i++) {
-                    if (i + 8 < s2.length() && s2.charAt(i) == '{' && s2.charAt(i + 1) == '\\'
+                    if (i + 3 < s2.length() && s2.charAt(i) == '{' && s2.charAt(i + 1) == '\\' && s2.charAt(i + 2) == '*') {
+                        int j = i + 3;
+                        while (true) {
+                            if (j == s2.length() || s2.charAt(j) == ';' || s2.charAt(j) == '}') {
+                                String newStringForOut = addInformation(i, s2, newCount, bigHowMuchOnformationWrite, information, start, 3);
+                                out.print(newStringForOut);
+                                i = newIndex(i, s2, 3);
+                                newCount--;
+                                start += bigHowMuchOnformationWrite;
+                                break;
+                            } else if (s2.charAt(j) == ' ' || s2.charAt(j) == '{') {
+                                out.print(s2.charAt(i));
+                                break;
+                            }
+                            j++;
+                        }
+                    } else if (i + 8 < s2.length() && s2.charAt(i) == '{' && s2.charAt(i + 1) == '\\'
                             && (s2.substring(i + 2, i + 2 + 6).equals("author") || s2.substring(i + 2, i + 2 + 6).equals("edmins"))) {
-                        String newStringForOut = addInformation(i, s2, newCount, howMuchOnformationWrite, information, start, 8);
+                        String newStringForOut = addInformation(i, s2, newCount, smallHowMuchOnformationWrite, information, start, 8);
                         out.print(newStringForOut);
                         i = newIndex(i, s2, 8);
                         newCount--;
-                        start += howMuchOnformationWrite;
-                    } else
-                        if (i + 7 < s2.length() && s2.charAt(i) == '{' && s2.charAt(i + 1) == '\\'
+                        start += smallHowMuchOnformationWrite;
+                    } else if (i + 7 < s2.length() && s2.charAt(i) == '{' && s2.charAt(i + 1) == '\\'
                             && s2.substring(i + 2, i + 2 + 5).equals("title")) {
-                        String newStringForOut = addInformation(i, s2, newCount, howMuchOnformationWrite, information, start, 7);
+                        String newStringForOut = addInformation(i, s2, newCount, smallHowMuchOnformationWrite, information, start, 7);
                         out.print(newStringForOut);
                         i = newIndex(i, s2, 7);
                         newCount--;
-                        start += howMuchOnformationWrite;
+                        start += smallHowMuchOnformationWrite;
                     } else if (i + 9 < s2.length() && s2.charAt(i) == '{' && s2.charAt(i + 1) == '\\'
                             && (s2.substring(i + 2, i + 2 + 7).equals("comment") || s2.substring(i + 2, i + 2 + 7).equals("subject")
                             || s2.substring(i + 2, i + 2 + 7).equals("version") || s2.substring(i + 2, i + 2 + 7).equals("doccomm"))) {
-                        String newStringForOut = addInformation(i, s2, newCount, howMuchOnformationWrite, information, start, 9);
+                        String newStringForOut = addInformation(i, s2, newCount, smallHowMuchOnformationWrite, information, start, 9);
                         out.print(newStringForOut);
                         i = newIndex(i, s2, 9);
                         newCount--;
-                        start += howMuchOnformationWrite;
+                        start += smallHowMuchOnformationWrite;
                     } else if (i + 10 < s2.length() && s2.charAt(i) == '{' && s2.charAt(i + 1) == '\\'
                             && (s2.substring(i + 2, i + 2 + 8).equals("operator") || s2.substring(i + 2, i + 2 + 8).equals("keywords")
                             || s2.substring(i + 2, i + 2 + 8).equals("nextfile") || s2.substring(i + 2, i + 2 + 8).equals("nofpages")
                             || s2.substring(i + 2, i + 2 + 8).equals("nofwords") || s2.substring(i + 2, i + 2 + 8).equals("nofchars"))) {
-                        String newStringForOut = addInformation(i, s2, newCount, howMuchOnformationWrite, information, start, 10);
+                        String newStringForOut = addInformation(i, s2, newCount, smallHowMuchOnformationWrite, information, start, 10);
                         out.print(newStringForOut);
                         i = newIndex(i, s2, 10);
                         newCount--;
-                        start += howMuchOnformationWrite;
+                        start += smallHowMuchOnformationWrite;
                     } else if (i + 6 < s2.length() && s2.charAt(i) == '{' && s2.charAt(i + 1) == '\\'
                             && s2.substring(i + 2, i + 2 + 4).equals("vern")) {
-                        String newStringForOut = addInformation(i, s2, newCount, howMuchOnformationWrite, information, start, 6);
+                        String newStringForOut = addInformation(i, s2, newCount, smallHowMuchOnformationWrite, information, start, 6);
                         out.print(newStringForOut);
                         i = newIndex(i, s2, 6);
                         newCount--;
-                        start += howMuchOnformationWrite;
+                        start += smallHowMuchOnformationWrite;
                     } else {
                         out.print(s2.charAt(i));
                     }
@@ -144,9 +170,9 @@ public class HideInformation {
         StringBuilder newStringForOut = new StringBuilder();
 
         newStringForOut.append(stringFromFile.substring(startPositionForHide, startPositionForHide + lengthOfNameBlock));
-        if (stringFromFile.charAt(startPositionForHide + lengthOfNameBlock + 1) == ' ')
+        if (stringFromFile.charAt(startPositionForHide + lengthOfNameBlock) == ' ')
             newStringForOut.append(" ");
-        else if (stringFromFile.charAt(startPositionForHide + lengthOfNameBlock + 1) == '\\')
+        else if (stringFromFile.charAt(startPositionForHide + lengthOfNameBlock) == '\\')
             newStringForOut.append("\\");
 
         if (numberOfBlock > 0) {
